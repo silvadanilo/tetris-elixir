@@ -7,16 +7,6 @@ defmodule Tetris do
     |> Points.move_to_location(brick.location)
   end
 
-  def try_move(brick, bottom, f) do
-    new_brick = f.(brick)
-
-    if Bottom.collides?(bottom, prepare(new_brick)) do
-      brick
-    else
-      new_brick
-    end
-  end
-
   def drop(brick, bottom, color) do
     new_brick = Brick.down(brick)
 
@@ -29,25 +19,48 @@ defmodule Tetris do
     )
   end
 
-  def maybe_drop(true = _collided, bottom, old_block, _new_block, color) do
+  def maybe_drop(true = _collided, bottom, old_brick, _new_brick, color) do
+    new_brick = Brick.new_random()
+
     points =
-      old_block
+      old_brick
       |> prepare()
       |> Points.with_color(color)
 
+    {count, new_bottom} =
+      bottom
+      |> Bottom.merge(points)
+      |> Bottom.full_collapse()
+
     %{
-      block: Brick.new_random(),
-      bottom: Bottom.merge(bottom, points),
-      score: 100,
+      brick: new_brick,
+      bottom: new_bottom,
+      score: score(count),
+      game_over: Bottom.collides?(new_bottom, prepare(new_brick)),
     }
   end
 
-  def maybe_drop(false = _collided, bottom, _old_block, new_block, _color) do
+  def maybe_drop(false = _collided, bottom, _old_brick, new_brick, _color) do
     %{
-      block: new_block,
+      brick: new_brick,
       bottom: bottom,
       score: 1,
+      game_over: false,
     }
+  end
+
+  def score(count) do
+    100 * round(:math.pow(2, count))
+  end
+
+  def try_move(brick, bottom, f) do
+    new_brick = f.(brick)
+
+    if Bottom.collides?(bottom, prepare(new_brick)) do
+      brick
+    else
+      new_brick
+    end
   end
 
   def try_left(brick, bottom), do: try_move(brick, bottom, &Brick.left/1)
