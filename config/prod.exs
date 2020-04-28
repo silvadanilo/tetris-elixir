@@ -10,11 +10,16 @@ use Mix.Config
 # which you should run after static files are built and
 # before starting your production server.
 config :tetris_ui, TetrisUiWeb.Endpoint,
+  load_from_system_env: true,
   url: [host: "personale", port: 4001],
+  http: [port: {:system, "PORT"}],
   cache_static_manifest: "priv/static/cache_manifest.json",
   server: true,
   root: ".",
   version: Application.spec(:phoenix_distillery, :vsn)
+
+
+
 
 # Do not print debug messages in production
 config :logger, level: :info
