@@ -11,13 +11,13 @@ use Mix.Config
 # before starting your production server.
 config :tetris_ui, TetrisUiWeb.Endpoint,
   load_from_system_env: true,
-  url: [host: "personale", port: 4001],
+  url: [scheme: "https", host: "tetris-danilo.herokuapp.com", port: 443],
   http: [port: {:system, "PORT"}],
   cache_static_manifest: "priv/static/cache_manifest.json",
   server: true,
   root: ".",
-  version: Application.spec(:phoenix_distillery, :vsn)
-
+  version: Application.spec(:phoenix_distillery, :vsn),
+  force_ssl: [rewrite_on: [:x_forwarded_proto]]
 
 
 
