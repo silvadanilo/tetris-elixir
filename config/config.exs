@@ -9,7 +9,7 @@ use Mix.Config
 
 # Configures the endpoint
 config :tetris_ui, TetrisUiWeb.Endpoint,
-  url: [host: "localhost"],
+  url: [host: "personale"],
   secret_key_base: "o9rxWEfwE2RrkMSVbY6sD9767JWxjlbl9E12iKdMihvS92ZwkOVn0n4ar/B6Fvtt",
   render_errors: [view: TetrisUiWeb.ErrorView, accepts: ~w(html json), layout: false],
   pubsub_server: TetrisUi.PubSub,

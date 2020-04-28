@@ -40,7 +40,7 @@ defmodule Tetris do
       bottom: new_bottom,
       score: score(count),
       game_over: Bottom.collides?(new_bottom, prepare(new_brick)),
-    } |> IO.inspect
+    }
   end
 
   def maybe_drop(false = _collided, bottom, _old_brick, new_brick, next_brick, _color) do
