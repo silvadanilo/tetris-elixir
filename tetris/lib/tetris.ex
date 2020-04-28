@@ -7,7 +7,7 @@ defmodule Tetris do
     |> Points.move_to_location(brick.location)
   end
 
-  def drop(brick, bottom, color) do
+  def drop(brick, next_brick, bottom, color) do
     new_brick = Brick.down(brick)
 
     maybe_drop(
@@ -15,12 +15,14 @@ defmodule Tetris do
       bottom,
       brick,
       new_brick,
+      next_brick,
       color
     )
   end
 
-  def maybe_drop(true = _collided, bottom, old_brick, _new_brick, color) do
-    new_brick = Brick.new_random()
+  def maybe_drop(true = _collided, bottom, old_brick, _new_brick, next_brick, color) do
+    new_brick = next_brick
+    next_brick = Brick.new_random()
 
     points =
       old_brick
@@ -34,15 +36,17 @@ defmodule Tetris do
 
     %{
       brick: new_brick,
+      next_brick: Brick.new_random(),
       bottom: new_bottom,
       score: score(count),
       game_over: Bottom.collides?(new_bottom, prepare(new_brick)),
-    }
+    } |> IO.inspect
   end
 
-  def maybe_drop(false = _collided, bottom, _old_brick, new_brick, _color) do
+  def maybe_drop(false = _collided, bottom, _old_brick, new_brick, next_brick, _color) do
     %{
       brick: new_brick,
+      next_brick: next_brick,
       bottom: bottom,
       score: 1,
       game_over: false,

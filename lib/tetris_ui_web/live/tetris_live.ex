@@ -29,33 +29,47 @@ defmodule TetrisUiWeb.TetrisLive do
     |> show()
   end
 
-  defp new_brick(socket) do
-    brick =
+  defp new_brick(%{assigns: %{next: current_brick}} = socket) do
+    next_brick =
       Brick.new_random()
       |> Map.put(:location, {3, -3})
 
-    assign(socket, brick: brick)
+    assign(socket, next: next_brick, brick: current_brick)
+  end
+  defp new_brick(socket) do
+    current_brick =
+      Brick.new_random()
+      |> Map.put(:location, {3, -3})
+
+    next_brick =
+      Brick.new_random()
+      |> Map.put(:location, {3, -3})
+
+    assign(socket, next: next_brick, brick: current_brick)
   end
 
   def show(socket) do
     brick = socket.assigns.brick
+    next_brick = socket.assigns.next
 
-    points =
-      brick
-      |> Brick.prepare()
-      |> Points.move_to_location(brick.location)
-      |> Points.with_color(color(brick))
+    points = Brick.render(brick)
 
-    assign(socket, tetromino: points)
+    next_points =
+      next_brick
+      |> Brick.shape()
+      |> Points.with_color(color(next_brick))
+
+    assign(socket, tetromino: points, next_tetromino: next_points)
   end
 
-  def drop(%{assigns: %{state: :playing, brick: old_brick, bottom: bottom}} = socket) do
+  def drop(%{assigns: %{state: :playing, brick: old_brick, next: next_brick, bottom: bottom}} = socket) do
     response =
-      Tetris.drop(old_brick, bottom, color(old_brick))
+      Tetris.drop(old_brick, next_brick, bottom, color(old_brick))
 
     socket
     |> assign(
       brick: response.brick,
+      next: response.next_brick,
       bottom: response.bottom,
       score: socket.assigns.score + response.score,
       state: (if response.game_over, do: :game_over, else: :playing)
@@ -103,6 +117,9 @@ defmodule TetrisUiWeb.TetrisLive do
         <%= raw render_brick(@tetromino) %>
         <%= raw render_brick(Map.values(@bottom)) %>
         <%= raw svg_foot() %>
+        <%= raw svg_next_head() %>
+        <%= raw render_brick(@next_tetromino) %>
+        <%= raw svg_foot() %>
         <%= debug(assigns) %>
       </div>
     """
@@ -128,6 +145,20 @@ defmodule TetrisUiWeb.TetrisLive do
     width="200" height="400"
     viewBox="0 0 200 400"
     xml:space="preserve" style="border: 1px solid red;">
+    """
+  end
+
+  def svg_next_head() do
+    """
+    <svg
+    version="1.0"
+    style="background-color: #FFFFFF"
+    id="Layer_1"
+    xmlns="http://www.w3.org/2000/svg"
+    xmlns:xlink="http://www.w3.org/1999/xlink"
+    width="80" height="400"
+    viewBox="0 0 80 400"
+    xml:space="preserve">
     """
   end
 
