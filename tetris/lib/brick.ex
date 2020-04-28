@@ -1,7 +1,7 @@
 defmodule Tetris.Brick do
   alias Tetris.Points
 
-  @x_center 2
+  @x_center 3
 
   defstruct [
     name: :i,
@@ -15,7 +15,7 @@ defmodule Tetris.Brick do
   def new_random() do
     %__MODULE__{
       name: random_name(),
-      location: {@x_center, 0},
+      location: {@x_center, -3},
       rotation: random_rotation(),
       reflection: random_reflection(),
     }
@@ -84,11 +84,11 @@ defmodule Tetris.Brick do
     |> Points.mirror(brick.reflection)
   end
 
-  def render(block) do
-    block
+  def render(brick) do
+    brick
     |> prepare
-    |> Points.move_to_location(block.location)
-    |> Points.with_color(block |> color())
+    |> Points.move_to_location(brick.location)
+    |> Points.with_color(brick |> color())
   end
 
   def to_string(brick) do

@@ -8,7 +8,15 @@ defmodule TetrisUiWeb.TetrisLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, new_game(socket)}
+    :timer.send_interval 300, self(), :tick
+
+    {:ok, start_game(socket)}
+  end
+
+  defp start_game(socket) do
+    assign(socket,
+      state: :starting,
+    )
   end
 
   defp new_game(socket) do
@@ -41,11 +49,20 @@ defmodule TetrisUiWeb.TetrisLive do
     assign(socket, tetromino: points)
   end
 
-  def drop(%{assigns: %{brick: brick, bottom: bottom}} = socket) do
+  def drop(%{assigns: %{state: :playing, brick: old_brick, bottom: bottom}} = socket) do
+    response =
+      Tetris.drop(old_brick, bottom, color(old_brick))
+
     socket
-    |> assign(brick: brick |> Tetris.drop(bottom, :red))
-    |> show()
+    |> assign(
+      brick: response.brick,
+      bottom: response.bottom,
+      score: socket.assigns.score + response.score,
+      state: (if response.game_over, do: :game_over, else: :playing)
+    )
+    |> show
   end
+  def drop(socket), do: socket
 
   def move(direction, socket) do
     socket
@@ -71,15 +88,32 @@ defmodule TetrisUiWeb.TetrisLive do
       brick: brick |> Tetris.try_right(bottom))
   end
 
-  def render(assigns) do
+  def render(%{state: :starting} = assigns) do
     ~L"""
-      <h1>Hello</h1>
+      <h1>Welcome to Tetris!</h1>
+      <button phx-click="start-game">Start</button>
+    """
+  end
+
+  def render(%{state: :playing} = assigns) do
+    ~L"""
+      <h1><%= @score %></h1>
       <div phx-window-keydown="keydown">
         <%= raw svg_head() %>
         <%= raw render_brick(@tetromino) %>
+        <%= raw render_brick(Map.values(@bottom)) %>
         <%= raw svg_foot() %>
         <%= debug(assigns) %>
       </div>
+    """
+  end
+
+  def render(%{state: :game_over} = assigns) do
+    ~L"""
+      <h1>Game Over</h1>
+      <h2>Your score is: <%= @score %></h2>
+      <button phx-click="start-game">Play again</button>
+      <%= debug(assigns) %>
     """
   end
 
@@ -169,11 +203,20 @@ def square(point, shade) do
     {:noreply, socket}
   end
 
+  def handle_event("start-game", _, socket) do
+    {:noreply, new_game(socket)}
+  end
+
+  def handle_info(:tick, socket) do
+    {:noreply, drop(socket)}
+  end
+
   def debug(assigns), do: debug(assigns, @debug, Mix.env)
   def debug(assigns, true, :dev) do
     ~L"""
     <pre>
-    <%= raw(@tetromino |> inspect) %>
+    <%= raw( @tetromino |> inspect) %>
+    <%= raw( @bottom |> inspect) %>
     </pre>
     """
   end
