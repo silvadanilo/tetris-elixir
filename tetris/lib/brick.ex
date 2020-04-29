@@ -107,11 +107,11 @@ defmodule Tetris.Brick do
 
   def x_center(), do: @x_center
 
-  defp color(%{name: :i}), do: :blue
-  defp color(%{name: :l}), do: :green
-  defp color(%{name: :z}), do: :orange
-  defp color(%{name: :o}), do: :red
-  defp color(%{name: :t}), do: :grey
+  def color(%{name: :i}), do: :blue
+  def color(%{name: :l}), do: :green
+  def color(%{name: :z}), do: :orange
+  def color(%{name: :o}), do: :red
+  def color(%{name: :t}), do: :grey
 
   defp rotate(270), do: 0
   defp rotate(degrees), do: degrees + 90

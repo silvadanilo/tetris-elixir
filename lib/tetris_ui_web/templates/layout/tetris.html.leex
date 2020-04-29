@@ -1,0 +1,25 @@
+<h1><%= @score %></h1>
+<button phx-click="pause-game">Pause</button>
+<div class="ext" phx-window-keydown="keydown">
+  <svg version="1.0" style="background-color: #F4F4F4" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="200" height="400" viewBox="0 0 200 400" xml:space="preserve" style="border: 1px solid red;">
+  <%= raw @tetromino %>
+  <%= raw @bottom %>
+  </svg>
+
+  <svg version="1.0" style="background-color: #FFFFFF" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="80" height="400" viewBox="0 0 80 400" xml:space="preserve">
+  <%= raw @next_tetromino %>
+  </svg>
+
+  <div class="arrows">
+    <div class="left" phx-click="left"></div>
+    <div class="down" phx-click="down"></div>
+    <div class="right" phx-click="right"></div>
+    <div class="up" phx-click="up"></div>
+  </div>
+</div>
+
+<%= if Mix.env == :dev do %>
+<pre>
+  <%= raw( @current_brick |> inspect) %>
+</pre>
+<%= end %>

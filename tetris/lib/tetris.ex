@@ -1,74 +1,154 @@
 defmodule Tetris do
+  use GenServer
   alias Tetris.{Bottom, Brick, Points}
 
-  def prepare(brick) do
+  defmodule Game do
+    defstruct [
+      status: :waiting,
+      score: 0,
+      bottom: %{},
+      current_brick: nil,
+      next_brick: nil,
+    ]
+
+  end
+
+  @doc false
+  def start_link() do
+    GenServer.start_link(__MODULE__, Game.__struct__())
+  end
+
+  @impl true
+  def init(state) do
+    {:ok, state}
+  end
+
+  def state(game) do
+    GenServer.call(game, :state)
+  end
+
+  def status(game) do
+    GenServer.call(game, :status)
+  end
+
+  def start(game, attributes \\ []) do
+    GenServer.call(game, {:start, attributes})
+  end
+
+  def try_left(game) do
+    GenServer.call(game, {:try_move, &Brick.left/1})
+  end
+
+  def try_right(game) do
+    GenServer.call(game, {:try_move, &Brick.right/1})
+  end
+
+  def try_spin_90(game) do
+    GenServer.call(game, {:try_move, &Brick.spin_90/1})
+  end
+
+  def drop(game) do
+    GenServer.call(game, :drop)
+  end
+
+  def brick(game) do
+    GenServer.call(game, :brick)
+  end
+
+  def next_brick(game) do
+    GenServer.call(game, :next_brick)
+  end
+
+  def handle_call(:state, _from, state) do
+    {:reply, state, state}
+  end
+
+  def handle_call(:status, _from, state) do
+    {:reply, state.status, state}
+  end
+
+  def handle_call({:start, attributes}, _from, state) do
+    new_state = %Game{state |
+      status: :playing,
+      current_brick: attributes |> Keyword.get(:current_brick, create_brick()),
+      next_brick: create_brick(),
+      score: 0,
+      bottom: attributes |> Keyword.get(:bottom, %{})
+    }
+
+    {:reply, new_state, new_state}
+  end
+
+  def handle_call(:brick, _from, state) do
+    {:reply, state.current_brick, state}
+  end
+
+  def handle_call(:next_brick, _from, state) do
+    {:reply, state.next_brick, state}
+  end
+
+  def handle_call({:try_move, f}, _from, state) do
+    brick = state.current_brick
+    shifted_brick = f.(brick)
+
+    brick = if Bottom.collides?(state.bottom, prepare(shifted_brick)) do
+      brick
+    else
+      shifted_brick
+    end
+
+    new_state = state |> Map.put(:current_brick, brick)
+    {:reply, new_state, new_state}
+  end
+
+  def handle_call(:drop, _from, state) do
+    shifted_brick = Brick.down(state.current_brick)
+
+    new_state =
+    if Bottom.collides?(state.bottom, prepare(shifted_brick)) do
+
+      points =
+        state.current_brick
+        |> prepare()
+        |> Points.with_color(Brick.color(state.current_brick))
+
+      {count, new_bottom} =
+        state.bottom
+        |> Bottom.merge(points)
+        |> Bottom.full_collapse()
+
+      %Game{state |
+        current_brick: state.next_brick,
+        next_brick: create_brick(),
+        bottom: new_bottom,
+        score: state.score + calculate_score(count),
+        status: case Bottom.collides?(new_bottom, prepare(state.next_brick)) do
+          true -> :game_over
+          false -> state.status
+        end
+      }
+    else
+      %Game{state |
+        current_brick: shifted_brick,
+        score: state.score + 1,
+      }
+    end
+
+    {:reply, new_state, new_state}
+  end
+
+  defp calculate_score(0), do: 0
+  defp calculate_score(count) do
+    100 * round(:math.pow(2, count))
+  end
+
+  defp prepare(brick) do
     brick
     |> Brick.prepare()
     |> Points.move_to_location(brick.location)
   end
 
-  def drop(brick, next_brick, bottom, color) do
-    new_brick = Brick.down(brick)
-
-    maybe_drop(
-      Bottom.collides?(bottom, prepare(new_brick)),
-      bottom,
-      brick,
-      new_brick,
-      next_brick,
-      color
-    )
+  defp create_brick() do
+    Brick.new_random()
   end
-
-  def maybe_drop(true = _collided, bottom, old_brick, _new_brick, next_brick, color) do
-    new_brick = next_brick
-    next_brick = Brick.new_random()
-
-    points =
-      old_brick
-      |> prepare()
-      |> Points.with_color(color)
-
-    {count, new_bottom} =
-      bottom
-      |> Bottom.merge(points)
-      |> Bottom.full_collapse()
-
-    %{
-      brick: new_brick,
-      next_brick: Brick.new_random(),
-      bottom: new_bottom,
-      score: score(count),
-      game_over: Bottom.collides?(new_bottom, prepare(new_brick)),
-    }
-  end
-
-  def maybe_drop(false = _collided, bottom, _old_brick, new_brick, next_brick, _color) do
-    %{
-      brick: new_brick,
-      next_brick: next_brick,
-      bottom: bottom,
-      score: 1,
-      game_over: false,
-    }
-  end
-
-  def score(0), do: 0
-  def score(count) do
-    100 * round(:math.pow(2, count))
-  end
-
-  def try_move(brick, bottom, f) do
-    new_brick = f.(brick)
-
-    if Bottom.collides?(bottom, prepare(new_brick)) do
-      brick
-    else
-      new_brick
-    end
-  end
-
-  def try_left(brick, bottom), do: try_move(brick, bottom, &Brick.left/1)
-  def try_right(brick, bottom), do: try_move(brick, bottom, &Brick.right/1)
-  def try_spin_90(brick, bottom), do: try_move(brick, bottom, &Brick.spin_90/1)
 end

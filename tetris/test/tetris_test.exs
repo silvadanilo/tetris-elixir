@@ -2,52 +2,60 @@ defmodule TetrisTest do
   use ExUnit.Case
   import Tetris
   alias Tetris.Brick
+  setup do
+    {:ok,server_pid} = Tetris.start_link()
+    Tetris.start(server_pid)
+    {:ok,server: server_pid}
+  end
 
-  test "try to move, returns shifted brick on success" do
-    brick = Brick.new(location: {5, 1})
-    bottom = %{}
+  test "try to move, returns shifted brick on success", %{server: pid} do
+    brick = brick(pid)
 
     expected = brick |> Brick.right
-    actual = try_right(brick, bottom)
+    actual = try_right(pid) |> Map.get(:current_brick)
 
     assert actual == expected
   end
 
-  test "try to move, returns original brick on failure" do
+  test "try to move, returns original brick on failure", %{server: pid} do
     brick = Brick.new(location: {8, 1})
-    bottom = %{}
+    Tetris.start(pid, current_brick: brick)
 
-    actual = try_right(brick, bottom)
+    actual = try_right(pid) |> Map.get(:current_brick)
 
     assert actual == brick
   end
 
-  test "drops without merging" do
+  test "drops without merging", %{server: pid} do
     brick = Brick.new(location: {5,5})
-    bottom = %{}
+    Tetris.start(pid, current_brick: brick, bottom: %{})
 
-    expected = %{
-      brick: Brick.down(brick),
+    response = drop(pid)
+
+    expecteds = %{
+      current_brick: Brick.down(brick),
       bottom: %{},
       score: 1,
-      game_over: false
     }
 
-    actual = drop(brick, bottom, :red)
-
-    assert expected == actual
+    assert_contains(response, expecteds)
   end
 
-  test "drops and merges" do
+  defp assert_contains(container, contained) do
+    contained
+    |> Enum.each(fn {key, value} -> assert container |> Map.get(key) == value end)
+  end
+
+  test "drops and merges", %{server: pid} do
     brick = Brick.new(location: {5,16})
-    bottom = %{}
+    Tetris.start(pid, current_brick: brick, bottom: %{})
 
-    actual = drop(brick, bottom, :red)
+    response = drop(pid)
 
-    assert Map.get(actual.bottom, {7,20}) == {7, 20, :red}
+    assert Map.get(response.bottom, {7,20}) == {7, 20, :blue}
   end
 
-  test "drops to bottom and compresses" do
+  test "drops to bottom and compresses", %{server: pid} do
     brick = Brick.new(location: {5, 16})
     bottom =
       for x <- 1..10, y <- 17..20, x != 7 do
@@ -55,10 +63,11 @@ defmodule TetrisTest do
       end
       |> Map.new
 
-    %{score: score, bottom: bottom } =
-      Tetris.drop(brick, bottom, :red)
+    Tetris.start(pid, current_brick: brick, bottom: bottom)
 
-    assert bottom == %{}
-    assert score == 1600
+    %{score: new_score, bottom: new_bottom } = drop(pid)
+
+    assert new_bottom == %{}
+    assert new_score == 1600
   end
 end
