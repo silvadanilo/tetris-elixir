@@ -29,6 +29,14 @@ defmodule TetrisUiWeb.TetrisLive do
     |> show()
   end
 
+  defp pause(socket) do
+    assign(socket, state: :pause)
+  end
+
+  defp continue(socket) do
+    assign(socket, state: :playing)
+  end
+
   defp new_brick(%{assigns: %{next: current_brick}} = socket) do
     next_brick =
       Brick.new_random()
@@ -112,6 +120,7 @@ defmodule TetrisUiWeb.TetrisLive do
   def render(%{state: :playing} = assigns) do
     ~L"""
       <h1><%= @score %></h1>
+      <button phx-click="pause-game">Pause</button>
       <div class="ext" phx-window-keydown="keydown">
         <%= raw svg_head() %>
         <%= raw render_brick(@tetromino) %>
@@ -122,6 +131,14 @@ defmodule TetrisUiWeb.TetrisLive do
         <%= raw svg_foot() %>
         <%= raw arrows() %>
       </div>
+      <%= debug(assigns) %>
+    """
+  end
+
+  def render(%{state: :pause} = assigns) do
+    ~L"""
+      <h1><%= @score %></h1>
+      <button phx-click="continue-game">Continue</button>
       <%= debug(assigns) %>
     """
   end
@@ -242,6 +259,14 @@ def square(point, shade) do
 
   def handle_event("start-game", _, socket) do
     {:noreply, new_game(socket)}
+  end
+
+  def handle_event("pause-game", _, socket) do
+    {:noreply, pause(socket)}
+  end
+
+  def handle_event("continue-game", _, socket) do
+    {:noreply, continue(socket)}
   end
 
   def handle_info(:tick, socket) do
