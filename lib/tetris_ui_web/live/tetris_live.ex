@@ -112,7 +112,7 @@ defmodule TetrisUiWeb.TetrisLive do
   def render(%{state: :playing} = assigns) do
     ~L"""
       <h1><%= @score %></h1>
-      <div phx-window-keydown="keydown">
+      <div class="ext" phx-window-keydown="keydown">
         <%= raw svg_head() %>
         <%= raw render_brick(@tetromino) %>
         <%= raw render_brick(Map.values(@bottom)) %>
@@ -120,8 +120,9 @@ defmodule TetrisUiWeb.TetrisLive do
         <%= raw svg_next_head() %>
         <%= raw render_brick(@next_tetromino) %>
         <%= raw svg_foot() %>
-        <%= debug(assigns) %>
+        <%= raw arrows() %>
       </div>
+      <%= debug(assigns) %>
     """
   end
 
@@ -131,6 +132,17 @@ defmodule TetrisUiWeb.TetrisLive do
       <h2>Your score is: <%= @score %></h2>
       <button phx-click="start-game">Play again</button>
       <%= debug(assigns) %>
+    """
+  end
+
+  defp arrows() do
+    """
+    <div class="arrows">
+      <div class="left" phx-click="left"></div>
+      <div class="down" phx-click="down"></div>
+      <div class="right" phx-click="right"></div>
+      <div class="up" phx-click="up"></div>
+    </div>
     """
   end
 
@@ -214,25 +226,19 @@ def square(point, shade) do
   defp color(%{name: :o}), do: :red
   defp color(%{name: :t}), do: :grey
 
-  def handle_event("keydown", %{"key" => "ArrowLeft"}, socket) do
-    {:noreply, move(:left, socket)}
-  end
+  def handle_event("keydown", %{"key" => "ArrowLeft"}, socket), do: {:noreply, move(:left, socket)}
+  def handle_event("left", _, socket), do: {:noreply, move(:left, socket)}
 
-  def handle_event("keydown", %{"key" => "ArrowRight"}, socket) do
-    {:noreply, move(:right, socket)}
-  end
+  def handle_event("keydown", %{"key" => "ArrowRight"}, socket), do: {:noreply, move(:right, socket)}
+  def handle_event("right", _, socket), do: {:noreply, move(:right, socket)}
 
-  def handle_event("keydown", %{"key" => "ArrowUp"}, socket) do
-    {:noreply, move(:turn, socket)}
-  end
+  def handle_event("keydown", %{"key" => "ArrowUp"}, socket), do: {:noreply, move(:turn, socket)}
+  def handle_event("up", _, socket), do: {:noreply, move(:turn, socket)}
 
-  def handle_event("keydown", %{"key" => "ArrowDown"}, socket) do
-    {:noreply, drop(socket)}
-  end
+  def handle_event("keydown", %{"key" => "ArrowDown"}, socket), do: {:noreply, drop(socket)}
+  def handle_event("down", _, socket), do: {:noreply, drop(socket)}
 
-  def handle_event("keydown", _, socket) do
-    {:noreply, socket}
-  end
+  def handle_event("keydown", _, socket), do: {:noreply, socket}
 
   def handle_event("start-game", _, socket) do
     {:noreply, new_game(socket)}
