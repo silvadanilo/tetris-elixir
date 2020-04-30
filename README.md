@@ -1,4 +1,4 @@
-# TetrisUi
+# Tetris
 
 To start your Phoenix server:
 
