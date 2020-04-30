@@ -35,6 +35,10 @@ defmodule Tetris do
     GenServer.call(game, {:start, attributes})
   end
 
+  def stop(game) do
+    GenServer.cast(game, :stop)
+  end
+
   def try_left(game) do
     GenServer.call(game, {:try_move, &Brick.left/1})
   end
@@ -65,6 +69,10 @@ defmodule Tetris do
 
   def handle_call(:status, _from, state) do
     {:reply, state.status, state}
+  end
+
+  def handle_cast(:stop, _from, _state) do
+    {:stop, :normal, :stop}
   end
 
   def handle_call({:start, attributes}, _from, state) do

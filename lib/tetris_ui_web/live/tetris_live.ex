@@ -6,10 +6,19 @@ defmodule TetrisUiWeb.TetrisLive do
   @debug true
 
   @impl true
-  def mount(_params, _session, socket) do
-    :timer.send_interval 300, self(), :tick
+  def terminate(_reason, %{assigns: %{game: game}}) do
+    Tetris.stop(game)
+    :ok
+  end
 
-    {:ok, waiting_room(socket)}
+  @impl true
+  def mount(_params, _session, socket) do
+    if connected?(socket) do
+      :timer.send_interval 300, self(), :tick
+      {:ok, waiting_room(socket)}
+    else
+      {:ok, assign(socket, status: :not_connected)}
+    end
   end
 
   defp waiting_room(socket) do
@@ -70,6 +79,12 @@ defmodule TetrisUiWeb.TetrisLive do
       <h2>Your score is: <%= @score %></h2>
       <button phx-click="start-game">Play again</button>
       <%= debug(assigns) %>
+    """
+  end
+
+  def render(%{status: :not_connected} = assigns) do
+    ~L"""
+      <h2>Waiting.....</h2>
     """
   end
 
